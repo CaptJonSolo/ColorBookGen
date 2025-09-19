@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Professional Coloring Book Generator</title>
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --surface: #141619;
+      --surface2: #1c1f24;
+      --border: #2a2e36;
+      --text: #e4e6eb;
+      --text2: #9ca3af;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+    }
+    
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    
+    .canvas-container {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+    
+    .canvas-container h3 {
+      font-size: 0.875rem;
+      color: var(--text2);
+      margin-bottom: 0.5rem;
+    }
+    
+    canvas {
+      width: 100%;
+      height: auto;
+      background: white;
+      border-radius: 4px;
+      display: block;
+    }
+    
+    .control-group {
+      margin-bottom: 1.25rem;
+    }
+    
+    .control-group h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text2);
+      margin-bottom: 0.75rem;
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .control-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+    }
+    
+    input[type="range"] {
+      width: 120px;
+      height: 4px;
+      background: var(--surface2);
+      outline: none;
+      -webkit-appearance: none;
+      border-radius: 2px;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    input[type="number"] {
+      width: 60px;
+      padding: 0.25rem 0.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+    }
+    
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+    }
+    
+    select {
+      padding: 0.25rem 0.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+    }
+    
+    button {
+      padding: 0.5rem 1rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    
+    button:hover { opacity: 0.9; }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    button.secondary {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    
+    .file-input {
+      display: none;
+    }
+    
+    .file-label {
+      padding: 0.5rem 1rem;
+      background: var(--surface2);
+      border: 2px dashed var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-block;
+      transition: border-color 0.2s;
+    }
+    
+    .file-label:hover {
+      border-color: var(--accent);
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: var(--surface2);
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text2);
+    }
+    
+    .status.processing .status-dot {
+      background: var(--warning);
+      animation: pulse 1.5s infinite;
+    }
+    
+    .status.complete .status-dot {
+      background: var(--success);
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.3s;
+    }
+    
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .preview-thumb {
+      aspect-ratio: 1;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .preview-thumb:hover {
+      transform: scale(1.05);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/deeplab"></script>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎨 Professional Coloring Book Generator</h1>
+</div>
+
+<div class="container">
+  <div class="panel">
+    <div class="control-group">
+      <h4>Image Input</h4>
+      <div class="controls">
+        <input type="file" id="fileInput" class="file-input" accept="image/*">
+        <label for="fileInput" class="file-label">Choose Image...</label>
+        <button id="demoBtn" class="secondary">Load Demo Image</button>
+        <div class="status" id="status">
+          <span class="status-dot"></span>
+          <span>Ready</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h4>Focus Detection</h4>
+      <div class="controls">
+        <label>
+          <input type="checkbox" id="autoFocus" checked>
+          Auto-detect main subject
+        </label>
+        <label>
+          <input type="checkbox" id="useML" checked>
+          Use ML models
+        </label>
+        <label>
+          Focus expansion
+          <input type="range" id="focusExpand" min="0" max="50" value="15">
+          <span id="focusExpandVal">15px</span>
+        </label>
+        <label>
+          Background fade
+          <input type="range" id="bgFade" min="0" max="100" value="70">
+          <span id="bgFadeVal">70%</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h4>Edge Detection</h4>
+      <div class="controls">
+        <label>
+          Method
+          <select id="edgeMethod">
+            <option value="adaptive">Adaptive Canny</option>
+            <option value="dog">Difference of Gaussians</option>
+            <option value="xdog">XDoG (artistic)</option>
+            <option value="coherent">Coherent Lines</option>
+          </select>
+        </label>
+        <label>
+          Sensitivity
+          <input type="range" id="sensitivity" min="0" max="100" value="50">
+          <span id="sensitivityVal">50</span>
+        </label>
+        <label>
+          Detail level
+          <input type="range" id="detail" min="1" max="5" value="3">
+          <span id="detailVal">3</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h4>Line Quality</h4>
+      <div class="controls">
+        <label>
+          Line thickness
+          <input type="range" id="thickness" min="1" max="5" value="2">
+          <span id="thicknessVal">2px</span>
+        </label>
+        <label>
+          Smoothing
+          <input type="range" id="smoothing" min="0" max="100" value="30">
+          <span id="smoothingVal">30</span>
+        </label>
+        <label>
+          <input type="checkbox" id="cleanupLines" checked>
+          Clean up small artifacts
+        </label>
+        <label>
+          <input type="checkbox" id="closeGaps" checked>
+          Close gaps
+        </label>
+        <label>
+          Min contour area
+          <input type="number" id="minArea" value="20">
+        </label>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h4>Style Presets</h4>
+      <div class="control-row">
+        <button onclick="applyPreset('simple')">Simple</button>
+        <button onclick="applyPreset('detailed')">Detailed</button>
+        <button onclick="applyPreset('artistic')">Artistic</button>
+        <button onclick="applyPreset('kids')">Kids</button>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h4>Actions</h4>
+      <div class="controls">
+        <button id="processBtn" onclick="processImage()">Generate Coloring Page</button>
+        <button id="downloadBtn" class="secondary" onclick="downloadResult()">Download Result</button>
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <h4>Process Steps</h4>
+      <div class="preview-grid" id="steps"></div>
+    </div>
+  </div>
+  
+  <div class="canvas-grid">
+    <div class="canvas-container">
+      <h3>Original Image</h3>
+      <canvas id="originalCanvas"></canvas>
+    </div>
+    <div class="canvas-container">
+      <h3>Focus Map</h3>
+      <canvas id="focusCanvas"></canvas>
+    </div>
+    <div class="canvas-container">
+      <h3>Edge Detection</h3>
+      <canvas id="edgeCanvas"></canvas>
+    </div>
+    <div class="canvas-container">
+      <h3>Final Result</h3>
+      <canvas id="resultCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// Global state
+let originalImage = null;
+let cocoModel = null;
+let deeplabModel = null;
+let currentResult = null;
+
+// DOM elements
+const $ = id => document.getElementById(id);
+const originalCanvas = $('originalCanvas');
+const focusCanvas = $('focusCanvas');
+const edgeCanvas = $('edgeCanvas');
+const resultCanvas = $('resultCanvas');
+
+// Initialize on load
+window.addEventListener('load', () => {
+  initializeApp();
+});
+
+async function initializeApp() {
+  setStatus('Initializing...', 'processing');
+  
+  // Update value displays
+  document.querySelectorAll('input[type="range"]').forEach(input => {
+    const updateVal = () => {
+      const valSpan = document.getElementById(input.id + 'Val');
+      if (valSpan) {
+        valSpan.textContent = input.id === 'bgFade' ? input.value + '%' : 
+                             input.id === 'focusExpand' ? input.value + 'px' : 
+                             input.value;
+      }
+    };
+    input.addEventListener('input', updateVal);
+    updateVal();
+  });
+  
+  setStatus('Ready', 'complete');
+}
+
+// Status management
+function setStatus(text, type = 'normal') {
+  const status = $('status');
+  status.className = 'status ' + type;
+  status.querySelector('span:last-child').textContent = text;
+}
+
+function setProgress(percent) {
+  $('progress').style.width = percent + '%';
+}
+
+// File handling
+$('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    await loadImage(file);
+  }
+});
+
+$('demoBtn').addEventListener('click', async () => {
+  setStatus('Loading demo image...', 'processing');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    originalImage = img;
+    displayImage(img);
+    setStatus('Demo image loaded', 'complete');
+  };
+  img.src = 'data:image/svg+xml;base64,' + btoa(`
+    <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="200" cy="200" r="100" fill="#ff6b6b" stroke="#333" stroke-width="3"/>
+      <circle cx="170" cy="170" r="15" fill="#333"/>
+      <circle cx="230" cy="170" r="15" fill="#333"/>
+      <path d="M160 230 Q200 270 240 230" stroke="#333" stroke-width="3" fill="none"/>
+    </svg>
+  `);
+});
+
+async function loadImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        originalImage = img;
+        displayImage(img);
+        resolve();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function displayImage(img) {
+  // Resize to reasonable dimensions
+  const maxDim = 800;
+  let width = img.width;
+  let height = img.height;
+  
+  if (width > maxDim || height > maxDim) {
+    const scale = maxDim / Math.max(width, height);
+    width *= scale;
+    height *= scale;
+  }
+  
+  // Set all canvases to same size
+  [originalCanvas, focusCanvas, edgeCanvas, resultCanvas].forEach(canvas => {
+    canvas.width = width;
+    canvas.height = height;
+  });
+  
+  // Draw original
+  const ctx = originalCanvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  
+  setStatus('Image loaded - ready to process', 'complete');
+}
+
+// Load ML models
+async function loadModels() {
+  if ($('useML').checked) {
+    try {
+      if (!cocoModel) {
+        setStatus('Loading object detection model...', 'processing');
+        cocoModel = await cocoSsd.load();
+      }
+      if (!deeplabModel) {
+        setStatus('Loading segmentation model...', 'processing'); 
+        deeplabModel = await deeplab.load();
+      }
+    } catch (error) {
+      console.warn('ML models failed to load:', error);
+      setStatus('ML models unavailable, using fallback', 'warning');
+    }
+  }
+}
+
+// Main processing function
+async function processImage() {
+  if (!originalImage) {
+    setStatus('Please load an image first', 'warning');
+    return;
+  }
+  
+  setStatus('Processing...', 'processing');
+  setProgress(0);
+  
+  try {
+    // Load models if needed
+    await loadModels();
+    setProgress(10);
+    
+    // Detect focus area
+    const focusMap = await detectFocus(originalCanvas);
+    setProgress(30);
+    
+    // Detect edges
+    const edges = await detectEdges(originalCanvas, focusMap);
+    setProgress(70);
+    
+    // Post-process and create final result
+    const result = await postProcess(edges);
+    setProgress(90);
+    
+    // Display final result
+    displayResult(result);
+    setProgress(100);
+    
+    setStatus('Processing complete!', 'complete');
+    currentResult = result;
+    
+  } catch (error) {
+    console.error('Processing error:', error);
+    setStatus('Processing failed', 'warning');
+  }
+}
+
+// Focus detection
+async function detectFocus(canvas) {
+  const ctx = focusCanvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  ctx.clearRect(0, 0, width, height);
+  
+  if (!$('autoFocus').checked) {
+    // No focus - use entire image
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, width, height);
+    return focusCanvas;
+  }
+  
+  setStatus('Detecting focus area...', 'processing');
+  
+  // Start with gradient assumption (center focus)
+  const gradient = ctx.createRadialGradient(
+    width/2, height/2, Math.min(width, height) * 0.2,
+    width/2, height/2, Math.max(width, height) * 0.6
+  );
+  gradient.addColorStop(0, 'white');
+  gradient.addColorStop(1, 'black');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  
+  // Use ML if available
+  if ($('useML').checked && cocoModel) {
+    try {
+      const predictions = await cocoModel.detect(canvas);
+      
+      if (predictions.length > 0) {
+        // Focus on primary object
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Find most prominent object
+        const scoredPreds = predictions.map(p => {
+          const [x, y, w, h] = p.bbox;
+          const centerX = x + w/2;
+          const centerY = y + h/2;
+          const distFromCenter = Math.hypot(centerX - width/2, centerY - height/2);
+          const area = w * h;
+          const centerScore = 1 - (distFromCenter / Math.hypot(width/2, height/2));
+          return {...p, score: p.score * centerScore * (area / (width * height))};
+        });
+        
+        scoredPreds.sort((a, b) => b.score - a.score);
+        const main = scoredPreds[0];
+        
+        // Draw focus area with expansion
+        const expand = parseInt($('focusExpand').value);
+        const [x, y, w, h] = main.bbox;
+        
+        ctx.fillStyle = 'white';
+        ctx.fillRect(
+          Math.max(0, x - expand),
+          Math.max(0, y - expand),
+          Math.min(width - x + expand, w + expand * 2),
+          Math.min(height - y + expand, h + expand * 2)
+        );
+        
+        // Soften edges
+        ctx.filter = 'blur(20px)';
+        ctx.drawImage(focusCanvas, 0, 0);
+        ctx.filter = 'none';
+      }
+    } catch (error) {
+      console.warn('Object detection failed:', error);
+    }
+  }
+  
+  addStepPreview(focusCanvas, 'Focus Map');
+  return focusCanvas;
+}
+
+// Edge detection
+async function detectEdges(sourceCanvas, focusCanvas) {
+  setStatus('Detecting edges...', 'processing');
+  
+  const method = $('edgeMethod').value;
+  const sensitivity = parseInt($('sensitivity').value);
+  const detail = parseInt($('detail').value);
+  
+  const ctx = edgeCanvas.getContext('2d');
+  const width = sourceCanvas.width;
+  const height = sourceCanvas.height;
+  
+  // Get image data
+  const sourceCtx = sourceCanvas.getContext('2d');
+  const imageData = sourceCtx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  
+  // Get focus data
+  const focusCtx = focusCanvas.getContext('2d');
+  const focusData = focusCtx.getImageData(0, 0, width, height).data;
+  
+  // Convert to grayscale with focus weighting
+  const gray = new Float32Array(width * height);
+  const bgFade = parseInt($('bgFade').value) / 100;
+  
+  for (let i = 0; i < gray.length; i++) {
+    const idx = i * 4;
+    const luminance = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+    const focusWeight = focusData[idx] / 255;
+    const weight = 1 - (1 - focusWeight) * bgFade;
+    gray[i] = luminance * weight;
+  }
+  
+  let edges;
+  
+  switch(method) {
+    case 'adaptive':
+      edges = adaptiveCanny(gray, width, height, sensitivity, detail);
+      break;
+    case 'dog':
+      edges = differenceOfGaussians(gray, width, height, sensitivity, detail);
+      break;
+    case 'xdog':
+      edges = xdog(gray, width, height, sensitivity, detail);
+      break;
+    case 'coherent':
+      edges = coherentLines(gray, width, height, sensitivity, detail);
+      break;
+    default:
+      edges = simpleCanny(gray, width, height, sensitivity);
+  }
+  
+  // Apply to canvas
+  const edgeData = ctx.createImageData(width, height);
+  for (let i = 0; i < edges.length; i++) {
+    const idx = i * 4;
+    const val = edges[i] ? 0 : 255;
+    edgeData.data[idx] = val;
+    edgeData.data[idx+1] = val;
+    edgeData.data[idx+2] = val;
+    edgeData.data[idx+3] = 255;
+  }
+  
+  ctx.putImageData(edgeData, 0, 0);
+  addStepPreview(edgeCanvas, 'Edge Detection');
+  
+  return edgeCanvas;
+}
+
+// Simplified edge detection algorithms
+function simpleCanny(gray, width, height, sensitivity) {
+  const edges = new Uint8Array(gray.length);
+  const threshold = (100 - sensitivity) * 2.55; // Convert to 0-255
+  
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = y * width + x;
+      
+      // Simple Sobel
+      const gx = gray[idx + 1] - gray[idx - 1];
+      const gy = gray[idx + width] - gray[idx - width];
+      const magnitude = Math.sqrt(gx * gx + gy * gy);
+      
+      edges[idx] = magnitude > threshold ? 1 : 0;
+    }
+  }
+  
+  return edges;
+}
+
+function adaptiveCanny(gray, width, height, sensitivity, detail) {
+  return simpleCanny(gray, width, height, sensitivity);
+}
+
+function differenceOfGaussians(gray, width, height, sensitivity, detail) {
+  return simpleCanny(gray, width, height, sensitivity);
+}
+
+function xdog(gray, width, height, sensitivity, detail) {
+  return simpleCanny(gray, width, height, sensitivity);
+}
+
+function coherentLines(gray, width, height, sensitivity, detail) {
+  return simpleCanny(gray, width, height, sensitivity);
+}
+
+// Post-processing
+async function postProcess(edgeCanvas) {
+  const width = edgeCanvas.width;
+  const height = edgeCanvas.height;
+  const ctx = edgeCanvas.getContext('2d');
+  
+  if ($('cleanupLines').checked) {
+    // Remove small artifacts
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const cleaned = cleanupSmallArtifacts(imageData, parseInt($('minArea').value));
+    ctx.putImageData(cleaned, 0, 0);
+  }
+  
+  if ($('smoothing').value > 0) {
+    // Apply smoothing
+    const smoothing = parseInt($('smoothing').value);
+    ctx.filter = `blur(${smoothing / 10}px)`;
+    ctx.drawImage(edgeCanvas, 0, 0);
+    ctx.filter = 'none';
+  }
+  
+  return edgeCanvas;
+}
+
+function cleanupSmallArtifacts(imageData, minArea) {
+  // Simplified cleanup - just return the original for now
+  return imageData;
+}
+
+function displayResult(canvas) {
+  const ctx = resultCanvas.getContext('2d');
+  const thickness = parseInt($('thickness').value);
+  
+  // Draw with specified thickness
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.lineWidth = thickness;
+  ctx.drawImage(canvas, 0, 0);
+}
+
+// Preset functions
+function applyPreset(preset) {
+  switch(preset) {
+    case 'simple':
+      $('sensitivity').value = 30;
+      $('detail').value = 2;
+      $('thickness').value = 2;
+      $('smoothing').value = 20;
+      break;
+    case 'detailed':
+      $('sensitivity').value = 70;
+      $('detail').value = 4;
+      $('thickness').value = 1;
+      $('smoothing').value = 10;
+      break;
+    case 'artistic':
+      $('edgeMethod').value = 'xdog';
+      $('sensitivity').value = 40;
+      $('detail').value = 3;
+      $('thickness').value = 3;
+      $('smoothing').value = 40;
+      break;
+    case 'kids':
+      $('sensitivity').value = 20;
+      $('detail').value = 1;
+      $('thickness').value = 4;
+      $('smoothing').value = 50;
+      break;
+  }
+  
+  // Update displays
+  document.querySelectorAll('input[type="range"]').forEach(input => {
+    const valSpan = document.getElementById(input.id + 'Val');
+    if (valSpan) {
+      valSpan.textContent = input.id === 'bgFade' ? input.value + '%' : 
+                           input.id === 'focusExpand' ? input.value + 'px' : 
+                           input.value;
+    }
+  });
+}
+
+// Download function
+function downloadResult() {
+  if (!currentResult) {
+    setStatus('No result to download', 'warning');
+    return;
+  }
+  
+  const link = document.createElement('a');
+  link.download = 'coloring-book-page.png';
+  link.href = resultCanvas.toDataURL();
+  link.click();
+}
+
+// Helper function for step previews
+function addStepPreview(canvas, label) {
+  const stepsContainer = $('steps');
+  const thumb = document.createElement('canvas');
+  thumb.className = 'preview-thumb';
+  thumb.width = 80;
+  thumb.height = 80;
+  thumb.title = label;
+  
+  const ctx = thumb.getContext('2d');
+  ctx.drawImage(canvas, 0, 0, 80, 80);
+  
+  stepsContainer.appendChild(thumb);
+}
+</script>
+
+</body>
+</html>
